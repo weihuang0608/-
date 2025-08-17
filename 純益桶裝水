@@ -1,0 +1,403 @@
+import React, { useState } from 'react';
+import { ShoppingCart, Plus, Minus, MapPin, Clock, Phone, User, Mail, FileText, CheckCircle } from 'lucide-react';
+
+const WaterOrderingSystem = () => {
+  const [cart, setCart] = useState([]);
+  const [currentStep, setCurrentStep] = useState('products');
+  const [orderData, setOrderData] = useState({
+    customerInfo: {
+      name: '',
+      phone: '',
+      email: '',
+      address: '',
+      area: '雲林縣'
+    },
+    deliveryTime: '',
+    notes: ''
+  });
+
+  const products = [
+    {
+      id: 1,
+      name: '純益五加侖桶裝水',
+      price: 70,
+      unit: '桶',
+      description: '純淨健康的桶裝水，適合家庭與辦公室使用',
+      paymentMethod: '貨到付款'
+    }
+  ];
+
+  const deliveryAreas = ['雲林縣', '嘉義縣', '嘉義市'];
+  
+  const deliveryTimes = [
+    '上午 09:00-12:00',
+    '下午 13:00-17:00',
+    '晚上 18:00-20:00'
+  ];
+
+  const addToCart = (productId, quantity = 1) => {
+    const product = products.find(p => p.id === productId);
+    const existingItem = cart.find(item => item.id === productId);
+    
+    if (existingItem) {
+      setCart(cart.map(item => 
+        item.id === productId 
+          ? { ...item, quantity: item.quantity + quantity }
+          : item
+      ));
+    } else {
+      setCart([...cart, { ...product, quantity }]);
+    }
+  };
+
+  const updateQuantity = (productId, newQuantity) => {
+    if (newQuantity <= 0) {
+      setCart(cart.filter(item => item.id !== productId));
+    } else {
+      setCart(cart.map(item => 
+        item.id === productId 
+          ? { ...item, quantity: newQuantity }
+          : item
+      ));
+    }
+  };
+
+  const getTotalAmount = () => {
+    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  };
+
+  const getTotalItems = () => {
+    return cart.reduce((total, item) => total + item.quantity, 0);
+  };
+
+  const generateOrderNumber = () => {
+    const date = new Date();
+    const timestamp = date.getFullYear().toString().slice(-2) + 
+                     String(date.getMonth() + 1).padStart(2, '0') + 
+                     String(date.getDate()).padStart(2, '0') + 
+                     String(date.getHours()).padStart(2, '0') + 
+                     String(date.getMinutes()).padStart(2, '0');
+    return `CY${timestamp}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
+  };
+
+  const handleSubmitOrder = () => {
+    if (!orderData.customerInfo.name || !orderData.customerInfo.phone || 
+        !orderData.customerInfo.address || !orderData.deliveryTime) {
+      alert('請填寫完整的訂購資訊');
+      return;
+    }
+    setCurrentStep('confirmation');
+  };
+
+  const ProductCard = ({ product }) => (
+    <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-100 hover:border-blue-300 transition-all duration-300">
+      <div className="text-center mb-4">
+        <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+          <div className="text-3xl">💧</div>
+        </div>
+        <h3 className="text-xl font-bold text-gray-800 mb-2">{product.name}</h3>
+        <p className="text-gray-600 text-sm mb-3">{product.description}</p>
+        <div className="text-2xl font-bold text-blue-600 mb-2">
+          NT$ {product.price} / {product.unit}
+        </div>
+        <div className="text-sm text-orange-600 font-medium bg-orange-50 px-3 py-1 rounded-full inline-block">
+          {product.paymentMethod}
+        </div>
+      </div>
+      
+      <div className="flex items-center justify-center space-x-4">
+        <button
+          onClick={() => addToCart(product.id)}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+        >
+          <Plus size={18} />
+          <span>加入購物車</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  const CartItem = ({ item }) => (
+    <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center">
+      <div className="flex-1">
+        <h4 className="font-medium text-gray-800">{item.name}</h4>
+        <p className="text-sm text-gray-600">NT$ {item.price} / {item.unit}</p>
+      </div>
+      <div className="flex items-center space-x-3">
+        <button
+          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+          className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+        >
+          <Minus size={16} />
+        </button>
+        <span className="w-12 text-center font-medium">{item.quantity}</span>
+        <button
+          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+          className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
+        >
+          <Plus size={16} />
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderProducts = () => (
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold text-blue-800 mb-4">純益桶裝水訂購系統</h1>
+        <p className="text-gray-600 text-lg">配送區域：雲林縣、嘉義縣市</p>
+      </div>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {products.map(product => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+
+      {cart.length > 0 && (
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <ShoppingCart className="mr-2" />
+            購物車 ({getTotalItems()} 項商品)
+          </h3>
+          <div className="space-y-3 mb-4">
+            {cart.map(item => (
+              <CartItem key={item.id} item={item} />
+            ))}
+          </div>
+          <div className="border-t pt-4">
+            <div className="flex justify-between items-center text-lg font-bold">
+              <span>總金額：</span>
+              <span className="text-blue-600">NT$ {getTotalAmount()}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setCurrentStep('order')}
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-medium mt-4 transition-colors"
+          >
+            前往結帳
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderOrderForm = () => (
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="bg-white rounded-xl shadow-lg p-8">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">訂購資訊</h2>
+        
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+              <User className="mr-2" />
+              客戶資訊
+            </h3>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="姓名 *"
+                value={orderData.customerInfo.name}
+                onChange={(e) => setOrderData({
+                  ...orderData,
+                  customerInfo: { ...orderData.customerInfo, name: e.target.value }
+                })}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              />
+              <input
+                type="tel"
+                placeholder="電話號碼 *"
+                value={orderData.customerInfo.phone}
+                onChange={(e) => setOrderData({
+                  ...orderData,
+                  customerInfo: { ...orderData.customerInfo, phone: e.target.value }
+                })}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              />
+              <input
+                type="email"
+                placeholder="電子信箱"
+                value={orderData.customerInfo.email}
+                onChange={(e) => setOrderData({
+                  ...orderData,
+                  customerInfo: { ...orderData.customerInfo, email: e.target.value }
+                })}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              />
+              <select
+                value={orderData.customerInfo.area}
+                onChange={(e) => setOrderData({
+                  ...orderData,
+                  customerInfo: { ...orderData.customerInfo, area: e.target.value }
+                })}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+              >
+                {deliveryAreas.map(area => (
+                  <option key={area} value={area}>{area}</option>
+                ))}
+              </select>
+              <textarea
+                placeholder="詳細地址 *"
+                value={orderData.customerInfo.address}
+                onChange={(e) => setOrderData({
+                  ...orderData,
+                  customerInfo: { ...orderData.customerInfo, address: e.target.value }
+                })}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none h-24 resize-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+              <Clock className="mr-2" />
+              配送時段
+            </h3>
+            <div className="space-y-3 mb-6">
+              {deliveryTimes.map(time => (
+                <label key={time} className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="deliveryTime"
+                    value={time}
+                    checked={orderData.deliveryTime === time}
+                    onChange={(e) => setOrderData({ ...orderData, deliveryTime: e.target.value })}
+                    className="w-4 h-4 text-blue-500"
+                  />
+                  <span className="text-gray-700">{time}</span>
+                </label>
+              ))}
+            </div>
+
+            <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+              <FileText className="mr-2" />
+              備註
+            </h3>
+            <textarea
+              placeholder="特殊需求或備註事項"
+              value={orderData.notes}
+              onChange={(e) => setOrderData({ ...orderData, notes: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none h-24 resize-none"
+            />
+          </div>
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-4 mt-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-3">訂單摘要</h3>
+          {cart.map(item => (
+            <div key={item.id} className="flex justify-between items-center py-2">
+              <span>{item.name} x {item.quantity}</span>
+              <span className="font-medium">NT$ {item.price * item.quantity}</span>
+            </div>
+          ))}
+          <div className="border-t pt-2 mt-2">
+            <div className="flex justify-between items-center text-lg font-bold">
+              <span>總金額：</span>
+              <span className="text-blue-600">NT$ {getTotalAmount()}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex space-x-4 mt-6">
+          <button
+            onClick={() => setCurrentStep('products')}
+            className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-medium transition-colors"
+          >
+            返回商品頁面
+          </button>
+          <button
+            onClick={handleSubmitOrder}
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-medium transition-colors"
+          >
+            確認訂購
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderConfirmation = () => {
+    const orderNumber = generateOrderNumber();
+    
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="text-green-500" size={40} />
+          </div>
+          
+          <h2 className="text-3xl font-bold text-green-600 mb-4">訂購成功！</h2>
+          <p className="text-gray-600 mb-6">感謝您選擇純益桶裝水，我們會盡快為您配送</p>
+          
+          <div className="bg-gray-50 rounded-lg p-6 mb-6">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">訂單詳情</h3>
+            <div className="text-left space-y-3">
+              <div className="flex justify-between">
+                <span className="font-medium">訂單編號：</span>
+                <span className="text-blue-600 font-mono">{orderNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">客戶姓名：</span>
+                <span>{orderData.customerInfo.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">聯絡電話：</span>
+                <span>{orderData.customerInfo.phone}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">配送地址：</span>
+                <span>{orderData.customerInfo.area} {orderData.customerInfo.address}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium">配送時段：</span>
+                <span>{orderData.deliveryTime}</span>
+              </div>
+              <div className="border-t pt-3">
+                <h4 className="font-medium mb-2">訂購商品：</h4>
+                {cart.map(item => (
+                  <div key={item.id} className="flex justify-between text-sm py-1">
+                    <span>{item.name} x {item.quantity}</span>
+                    <span>NT$ {item.price * item.quantity}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                  <span>總金額：</span>
+                  <span className="text-blue-600">NT$ {getTotalAmount()}</span>
+                </div>
+              </div>
+              <div className="bg-orange-50 p-3 rounded-lg mt-4">
+                <p className="text-orange-700 font-medium">付款方式：貨到付款</p>
+                <p className="text-sm text-orange-600 mt-1">請於收貨時準備現金給送貨人員</p>
+              </div>
+            </div>
+          </div>
+          
+          <button
+            onClick={() => {
+              setCurrentStep('products');
+              setCart([]);
+              setOrderData({
+                customerInfo: { name: '', phone: '', email: '', address: '', area: '雲林縣' },
+                deliveryTime: '',
+                notes: ''
+              });
+            }}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+          >
+            繼續購物
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {currentStep === 'products' && renderProducts()}
+      {currentStep === 'order' && renderOrderForm()}
+      {currentStep === 'confirmation' && renderConfirmation()}
+    </div>
+  );
+};
+
+export default WaterOrderingSystem;
